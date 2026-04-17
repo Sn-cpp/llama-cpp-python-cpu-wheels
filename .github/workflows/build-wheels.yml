@@ -33,8 +33,7 @@ jobs:
           CIBW_BUILD: cp312-manylinux_x86_64
           CIBW_ARCHS: x86_64
 
-          # safer for HF Spaces compatibility
-          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_17
+          CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_17_x86_64
 
           # critical: avoid CPU-specific instructions
           CMAKE_ARGS: >
