@@ -1,0 +1,47 @@
+name: Build llama-cpp-python wheels
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python (host, not build env)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install cibuildwheel
+        run: |
+          python -m pip install --upgrade pip
+          pip install cibuildwheel==2.16.5
+
+      - name: Build wheels (manylinux)
+        env:
+          CIBW_BUILD: cp313-manylinux_x86_64
+          CIBW_ARCHS: x86_64
+
+          # Use glibc-compatible base
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+
+          # Critical flags for llama.cpp
+          CMAKE_ARGS: >
+            -DLLAMA_NATIVE=OFF
+            -DLLAMA_OPENBLAS=ON
+
+        run: |
+          cibuildwheel --platform linux --output-dir wheelhouse
+
+      - name: Upload wheels (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: llama-wheels
+          path: wheelhouse/*.whl
