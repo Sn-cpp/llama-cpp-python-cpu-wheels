@@ -1,4 +1,4 @@
-name: Build llama-cpp-python wheels
+name: Build & Release llama-cpp-python (cp312)
 
 on:
   workflow_dispatch:
@@ -11,37 +11,54 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      # 1. Checkout
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python (host, not build env)
+      # 2. Setup Python (host only)
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.12"
 
+      # 3. Install cibuildwheel
       - name: Install cibuildwheel
         run: |
           python -m pip install --upgrade pip
           pip install cibuildwheel==2.16.5
 
-      - name: Build wheels (manylinux)
+      # 4. Build wheel (manylinux, glibc)
+      - name: Build wheel
         env:
-          CIBW_BUILD: cp313-manylinux_x86_64
+          CIBW_BUILD: cp312-manylinux_x86_64
           CIBW_ARCHS: x86_64
 
-          # Use glibc-compatible base
-          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+          # safer for HF Spaces compatibility
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_17
 
-          # Critical flags for llama.cpp
+          # critical: avoid CPU-specific instructions
           CMAKE_ARGS: >
             -DLLAMA_NATIVE=OFF
-            -DLLAMA_OPENBLAS=ON
 
         run: |
           cibuildwheel --platform linux --output-dir wheelhouse
 
-      - name: Upload wheels (artifact)
+      # 5. Debug: show output
+      - name: List wheels
+        run: ls -lah wheelhouse
+
+      # 6. Upload artifact (for manual download)
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: llama-wheels
           path: wheelhouse/*.whl
+
+      # 7. Publish to GitHub Release (only on tag)
+      - name: Publish Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: wheelhouse/*.whl
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
