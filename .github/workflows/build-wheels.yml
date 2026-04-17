@@ -30,15 +30,9 @@ jobs:
       # 4. Build wheel (manylinux, glibc)
       - name: Build wheel
         env:
-          CIBW_BUILD: cp312-*
+          CIBW_BUILD: cp312-manylinux_x86_64
           CIBW_ARCHS: x86_64
-
-          CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_17_x86_64
-
-          # critical: avoid CPU-specific instructions
-          CMAKE_ARGS: >
-            -DLLAMA_NATIVE=OFF
-
+          CMAKE_ARGS: -DLLAMA_NATIVE=OFF
         run: |
           cibuildwheel --platform linux --output-dir wheelhouse
 
